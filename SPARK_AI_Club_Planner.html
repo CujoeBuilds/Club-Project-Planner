@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SPARK AI Club — Project Planner</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0d0d0f;
+    --surface: #15151a;
+    --surface2: #1c1c24;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #f0eff4;
+    --muted: #8884a0;
+    --accent: #7c6af5;
+    --accent2: #a89cf7;
+    --accent-glow: rgba(124,106,245,0.18);
+    --green: #3ecf8e;
+    --amber: #f5a623;
+    --coral: #f06c6c;
+    --teal: #38c9c9;
+    --pink: #e06bac;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* Subtle grid texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(124,106,245,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,106,245,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+  /* Header */
+  header {
+    padding: 28px 32px 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-spark {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+
+  .logo-spark span {
+    color: var(--accent2);
+  }
+
+  .logo-sub {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border-left: 1px solid var(--border2);
+    padding-left: 10px;
+    margin-left: 2px;
+  }
+
+  .header-stats {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .stat-pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 5px 12px;
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .stat-pill strong {
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  /* Tab nav */
+  .tab-nav {
+    display: flex;
+    gap: 2px;
+    padding: 24px 32px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tab-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--muted);
+    padding: 8px 14px 12px;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+  }
+
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent2); border-bottom-color: var(--accent2); }
+
+  /* Main layout */
+  main { padding: 28px 32px 60px; flex: 1; }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ─── BOARD TAB ─── */
+  .board-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 22px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .filter-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    padding: 5px 12px;
+    transition: all 0.15s;
+  }
+  .filter-btn:hover { border-color: var(--border2); color: var(--text); }
+  .filter-btn.active { background: var(--accent-glow); border-color: var(--accent); color: var(--accent2); }
+
+  .board-cols {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+
+  @media(max-width:900px) { .board-cols { grid-template-columns: repeat(2,1fr); } }
+  @media(max-width:560px) { .board-cols { grid-template-columns: 1fr; } }
+
+  .col-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .col-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .col-count {
+    background: var(--surface2);
+    border-radius: 100px;
+    padding: 2px 8px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .col-ideas { display: flex; flex-direction: column; gap: 8px; min-height: 60px; }
+
+  /* Idea card */
+  .idea-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 13px 14px;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.1s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .idea-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--card-color, var(--accent));
+    border-radius: 3px 0 0 3px;
+  }
+
+  .idea-card:hover {
+    border-color: var(--border2);
+    transform: translateY(-1px);
+  }
+
+  .idea-card.priority-high::before { background: var(--accent); }
+  .idea-card.priority-high { border-color: rgba(124,106,245,0.2); }
+
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 5px;
+  }
+
+  .card-desc {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 8px;
+    line-height: 1.4;
+  }
+
+  .card-tags {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  .tag {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 100px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+
+  .tag-workshop { background: rgba(124,106,245,0.15); color: var(--accent2); }
+  .tag-build    { background: rgba(62,207,142,0.13); color: var(--green); }
+  .tag-career   { background: rgba(56,201,201,0.13); color: var(--teal); }
+  .tag-game     { background: rgba(245,166,35,0.13); color: var(--amber); }
+  .tag-flagship { background: rgba(240,108,108,0.13); color: var(--coral); }
+  .tag-cyber    { background: rgba(224,107,172,0.13); color: var(--pink); }
+  .tag-outreach { background: rgba(168,156,247,0.12); color: #c4baff; }
+
+  /* Status move btns */
+  .card-actions {
+    display: none;
+    gap: 5px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .idea-card:hover .card-actions { display: flex; flex-wrap: wrap; }
+
+  .move-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    padding: 3px 8px;
+    transition: all 0.12s;
+  }
+  .move-btn:hover { background: var(--accent-glow); border-color: var(--accent); color: var(--accent2); }
+
+  /* ─── TIMELINE TAB ─── */
+  .timeline-grid {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 0;
+  }
+
+  .tl-month-col { display: flex; flex-direction: column; }
+  .tl-month {
+    height: 80px;
+    display: flex;
+    align-items: center;
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    padding-right: 16px;
+  }
+  .tl-month.current { color: var(--accent2); }
+
+  .tl-items-col { display: flex; flex-direction: column; }
+  .tl-row {
+    height: 80px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 0 0 12px;
+    flex-wrap: wrap;
+    overflow: hidden;
+  }
+
+  .tl-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 4px 11px;
+    font-size: 12px;
+    color: var(--text);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .tl-chip:hover { border-color: var(--border2); }
+  .tl-chip .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ─── RESOURCES TAB ─── */
+  .resources-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+  }
+
+  .resource-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    transition: border-color 0.15s;
+  }
+  .resource-card:hover { border-color: var(--border2); }
+
+  .rc-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    margin-bottom: 10px;
+  }
+
+  .rc-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .rc-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+
+  .rc-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: var(--accent2);
+    text-decoration: none;
+    transition: opacity 0.15s;
+  }
+  .rc-link:hover { opacity: 0.8; }
+
+  /* ─── MODAL ─── */
+  .modal-bg {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-bg.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    max-width: 520px;
+    width: 100%;
+    padding: 26px 28px;
+    position: relative;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .modal-close {
+    position: absolute; top: 16px; right: 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 16px;
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    transition: color 0.15s;
+  }
+  .modal-close:hover { color: var(--text); }
+
+  .modal-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .modal-cat {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .modal-desc {
+    font-size: 14px;
+    color: rgba(240,239,244,0.8);
+    line-height: 1.7;
+    margin-bottom: 18px;
+  }
+
+  .modal-section {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+    margin-top: 18px;
+  }
+
+  .notes-area {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 10px 12px;
+    resize: vertical;
+    min-height: 80px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .notes-area:focus { border-color: var(--accent); }
+
+  .status-select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 8px 12px;
+    outline: none;
+    cursor: pointer;
+    margin-top: 8px;
+    appearance: none;
+    transition: border-color 0.15s;
+  }
+  .status-select:focus { border-color: var(--accent); }
+
+  .save-btn {
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: #fff;
+    cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 10px 20px;
+    margin-top: 16px;
+    transition: opacity 0.15s;
+  }
+  .save-btn:hover { opacity: 0.88; }
+
+  /* Priority badge */
+  .priority-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 100px;
+    margin-bottom: 14px;
+  }
+  .p-high { background: rgba(124,106,245,0.18); color: var(--accent2); border: 1px solid rgba(124,106,245,0.3); }
+  .p-med  { background: rgba(245,166,35,0.13); color: var(--amber); border: 1px solid rgba(245,166,35,0.2); }
+  .p-low  { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+
+  /* Empty col */
+  .col-empty {
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* Add idea */
+  .add-idea-btn {
+    background: none;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    padding: 10px;
+    width: 100%;
+    text-align: center;
+    transition: all 0.15s;
+    margin-top: 4px;
+  }
+  .add-idea-btn:hover { border-color: var(--accent); color: var(--accent2); background: var(--accent-glow); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 3px; }
+
+  /* Add form */
+  .add-form {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-top: 6px;
+  }
+  .add-form input, .add-form textarea, .add-form select {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 8px 11px;
+    outline: none;
+    margin-bottom: 8px;
+    transition: border-color 0.15s;
+  }
+  .add-form input:focus, .add-form textarea:focus { border-color: var(--accent); }
+  .add-form textarea { resize: vertical; min-height: 60px; }
+  .form-row { display: flex; gap: 8px; }
+  .form-row > * { flex: 1; }
+  .form-actions { display: flex; gap: 8px; margin-top: 2px; }
+  .btn-primary { background: var(--accent); border: none; border-radius: var(--radius-sm); color: #fff; cursor: pointer; font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; padding: 8px 16px; transition: opacity 0.15s; }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-cancel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--muted); cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 12px; padding: 8px 14px; transition: all 0.15s; }
+  .btn-cancel:hover { color: var(--text); border-color: var(--border2); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="logo">
+      <div class="logo-spark">SPARK <span>AI</span></div>
+      <div class="logo-sub">Project Planner</div>
+    </div>
+    <div class="header-stats" id="header-stats"></div>
+  </header>
+
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab('board')">Project Board</button>
+    <button class="tab-btn" onclick="switchTab('timeline')">Timeline</button>
+    <button class="tab-btn" onclick="switchTab('resources')">Resources</button>
+  </div>
+
+  <main>
+
+    <!-- BOARD -->
+    <div class="tab-panel active" id="tab-board">
+      <div class="board-controls" id="filter-bar"></div>
+      <div class="board-cols" id="board-cols"></div>
+    </div>
+
+    <!-- TIMELINE -->
+    <div class="tab-panel" id="tab-timeline">
+      <div class="timeline-grid" id="timeline-grid"></div>
+    </div>
+
+    <!-- RESOURCES -->
+    <div class="tab-panel" id="tab-resources">
+      <div class="resources-grid" id="resources-grid"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Modal -->
+<div class="modal-bg" id="modal-bg" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────────────────
+
+const STATUSES = ['backlog','planning','in-progress','done'];
+const STATUS_LABELS = { backlog:'Backlog', planning:'Planning', 'in-progress':'In Progress', done:'Done' };
+const STATUS_COLORS = { backlog:'#8884a0', planning:'#f5a623', 'in-progress':'#7c6af5', done:'#3ecf8e' };
+
+const TAG_CLASS = {
+  Workshop:'tag-workshop', Build:'tag-build', Career:'tag-career',
+  Game:'tag-game', Flagship:'tag-flagship', Cyber:'tag-cyber', Outreach:'tag-outreach',
+  Ethics:'tag-workshop', Meetings:'tag-outreach', Tool:'tag-build', Network:'tag-career'
+};
+
+const TAG_COLOR = {
+  Workshop:'#a89cf7', Build:'#3ecf8e', Career:'#38c9c9',
+  Game:'#f5a623', Flagship:'#f06c6c', Cyber:'#e06bac', Outreach:'#c4baff',
+  Ethics:'#a89cf7', Meetings:'#c4baff', Tool:'#3ecf8e', Network:'#38c9c9'
+};
+
+let ideas = [
+  { id:1,  title:'AI Tool of the Month', category:'Recurring Programs', desc:'Monthly hands-on workshop with a live build component — members use the tool, not just watch.', tags:['Workshop'], priority:'high', status:'planning', notes:'', month:'May 2025', details:'Each month pick one AI tool (Claude, Cursor, Midjourney, etc). First half is a demo + overview, second half is a 20-min build challenge. Tie guest speakers to the month\'s tool for extra depth.' },
+  { id:2,  title:'AI/Tech in the News', category:'Recurring Programs', desc:'Member-led 5-min briefings at the start of each meeting.', tags:['Meetings'], priority:'med', status:'backlog', notes:'', month:'May 2025', details:'Rotate presenter duties across members each week. Format: what happened, why it matters, what club members should know. Builds public speaking and keeps meetings current.' },
+  { id:3,  title:'Ethical AI Case Studies', category:'Recurring Programs', desc:'Structured discussion around real-world AI decisions and failures.', tags:['Ethics','Meetings'], priority:'med', status:'backlog', notes:'', month:'Jun 2025', details:'Use real cases: Google Gemini controversy, bias in hiring tools, deepfake incidents. Members take sides and argue positions. 50% of survey respondents flagged ethics as a key interest.' },
+  { id:4,  title:'Guest Speaker Series', category:'Recurring Programs', desc:'Industry pros tied to that month\'s AI tool or topic — reach out via LinkedIn.', tags:['Workshop','Network'], priority:'high', status:'planning', notes:'', month:'May 2025', details:'Target: AI engineers, security professionals using AI, hiring managers at target companies. Frame the ask as a 30-min Q&A, not a lecture. Use your Student Ambassador and SBIT contacts.' },
+  { id:5,  title:'SBIT Bulletin Postings', category:'Recurring Programs', desc:'Regular visibility across the school community for all events and projects.', tags:['Outreach'], priority:'med', status:'in-progress', notes:'', month:'May 2025', details:'Post upcoming events, project launches, and member wins. Keep it punchy — one key line per item. Aim for bi-weekly cadence.' },
+  { id:6,  title:'Resume Builder + JD Gap Analyzer', category:'Career Tools', desc:'Upload resume + job posting, get a gap analysis and tailored bullet suggestions.', tags:['Build','Career','Flagship'], priority:'high', status:'planning', notes:'', month:'Jun 2025', details:'Built on Claude API. User uploads resume (PDF) and pastes JD. Claude identifies missing keywords, skill gaps, and rewrites relevant bullets. Could serve all SBIT students, not just club members — great for recruitment and visibility.' },
+  { id:7,  title:'Mock Interview Simulator', category:'Career Tools', desc:'Role-specific question sets with STAR method feedback from Claude.', tags:['Build','Career'], priority:'high', status:'backlog', notes:'', month:'Aug 2025', details:'User picks a job role, gets 5 behavioral + 3 technical questions. Records answers (or types), Claude evaluates against STAR format and gives specific feedback. Start with cybersecurity and IT roles.' },
+  { id:8,  title:'Certification Roadmap Tool', category:'Career Tools', desc:'Personalized cert path generator by major and career goal.', tags:['Tool','Career'], priority:'med', status:'backlog', notes:'', month:'Sep 2025', details:'Covers Security+, A+, CySA+, AWS, Azure, Google Cloud, CASP+. User inputs current certs and target role. Tool outputs a sequenced roadmap with estimated timelines and study resources.' },
+  { id:9,  title:'Campus Resource Finder', category:'Career Tools', desc:'AI-powered search for tutoring, labs, career services at Purdue Global.', tags:['Tool'], priority:'low', status:'backlog', notes:'', month:'Oct 2025', details:'Chatbot that answers "where do I go for X" questions using school resources. Good beginner Claude API project for newer members.' },
+  { id:10, title:'Club GitHub Portfolio Org', category:'Career Tools', desc:'Public GitHub org where all club builds live so members can point to them in job apps.', tags:['Build','Career'], priority:'high', status:'in-progress', notes:'', month:'May 2025', details:'Set up org, create README standards, assign each project a repo. Every contributing member gets listed as a collaborator. Links go on LinkedIn and resumes.' },
+  { id:11, title:'AI Flashcard Generator', category:'Productivity Tools', desc:'Upload lecture notes or syllabus, get Anki-style flashcards instantly.', tags:['Build'], priority:'med', status:'backlog', notes:'', month:'Jul 2025', details:'Simple Claude API build: paste or upload text, get Q&A pairs formatted for studying. Good intro-level project for members new to API development.' },
+  { id:12, title:'Study Plan + Time Manager', category:'Productivity Tools', desc:'AI-generated weekly plans from course syllabi and due dates.', tags:['Build'], priority:'med', status:'backlog', notes:'', month:'Aug 2025', details:'User inputs courses, upcoming exams, hours available per day. Claude outputs a prioritized weekly schedule. Useful for club members and shareable to the broader student body.' },
+  { id:13, title:'SPARK AI Assistant', category:'Productivity Tools', desc:'Club chatbot answering FAQs, AI resource questions, and event info. 80% member interest.', tags:['Build','Flagship'], priority:'high', status:'planning', notes:'', month:'Jun 2025', details:'Flagship project. Built on Claude API. Trained on club FAQs, resource list, event schedule. Embeddable on the club website. Great showcase piece for the semester capstone — 80% of survey respondents wanted to help build this.' },
+  { id:14, title:'Cybersecurity Jeopardy', category:'Games & Engagement', desc:'Live team game at meetings — rotating category sets covering threats, tools, and concepts.', tags:['Game','Cyber'], priority:'high', status:'planning', notes:'', month:'May 2025', details:'Build a simple web-based Jeopardy board. Categories: Threats & Vulnerabilities, Security Tools, Famous Breaches, AI in Cyber, Acronym Smash. 5 questions per category, teams compete live. Easy to update each month.' },
+  { id:15, title:'Guess If AI Wrote It', category:'Games & Engagement', desc:'Quick icebreaker — teams vote on whether a text was written by AI or a human.', tags:['Game','Ethics'], priority:'med', status:'backlog', notes:'', month:'Jun 2025', details:'Presenter shows 5 text samples at the start of a meeting. Teams vote, score points for correct guesses. Tie into ethics discussion: what does it mean that we can\'t tell? Takes 10 minutes total — no setup required.' },
+  { id:16, title:'Threat Intel Dashboard', category:'Games & Engagement', desc:'Live CVE data from CISA KEV + NVD API — strong portfolio piece for cyber-focused members.', tags:['Build','Cyber','Flagship'], priority:'high', status:'planning', notes:'', month:'Jul 2025', details:'Pulls from NVD API and CISA KEV feed. Displays latest critical CVEs, affected products, patch status. Add severity filters, search, and AI-generated plain-language summaries of each CVE via Claude API. Showcase piece for the end-of-semester event.' },
+  { id:17, title:'AI Innovation Competition', category:'Anchor Events', desc:'Team hackathon — build an AI solution in a set time. 60% member interest, 30% maybe.', tags:['Flagship'], priority:'high', status:'planning', notes:'', month:'Aug 2025', details:'Format: 3-hour build sprint, teams of 2-4, any AI tool allowed. Judging: usefulness, creativity, presentation. Prize ideas: LinkedIn shoutout, feature in SBIT bulletin, Amazon gift cards. Frame it as no-code-required to convert the 30% "maybe" respondents.' },
+  { id:18, title:'End-of-Semester Showcase', category:'Anchor Events', desc:'Members present builds to school + external guests. Ties career prep to real deliverables.', tags:['Career','Flagship'], priority:'high', status:'backlog', notes:'', month:'Oct 2025', details:'Each project team gets 5 minutes to demo their build. Invite SBIT faculty, program directors, and external industry contacts. Members add it to their resume as "presented at SPARK AI Showcase." Announce at the start of the semester so all builds are working toward it.' }
+];
+
+let activeFilter = 'all';
+let addingToCol = null;
+let openIdeaId = null;
+
+// ─── STORAGE ─────────────────────────────────────────────────────────────────
+
+function save() {
+  try { localStorage.setItem('spark_ideas', JSON.stringify(ideas)); } catch(e) {}
+}
+
+function load() {
+  try {
+    const d = localStorage.getItem('spark_ideas');
+    if (d) ideas = JSON.parse(d);
+  } catch(e) {}
+}
+
+// ─── STATS ───────────────────────────────────────────────────────────────────
+
+function renderStats() {
+  const total = ideas.length;
+  const done = ideas.filter(i => i.status === 'done').length;
+  const inProg = ideas.filter(i => i.status === 'in-progress').length;
+  const high = ideas.filter(i => i.priority === 'high').length;
+  document.getElementById('header-stats').innerHTML = `
+    <div class="stat-pill"><strong>${total}</strong> ideas</div>
+    <div class="stat-pill"><strong>${inProg}</strong> in progress</div>
+    <div class="stat-pill"><strong>${done}</strong> done</div>
+    <div class="stat-pill"><strong>${high}</strong> high priority</div>
+  `;
+}
+
+// ─── FILTER BAR ──────────────────────────────────────────────────────────────
+
+function renderFilters() {
+  const cats = ['all', ...new Set(ideas.map(i => i.category))];
+  document.getElementById('filter-bar').innerHTML = cats.map(c =>
+    `<button class="filter-btn ${activeFilter === c ? 'active' : ''}" onclick="setFilter('${c}')">${c === 'all' ? 'All' : c}</button>`
+  ).join('');
+}
+
+function setFilter(cat) {
+  activeFilter = cat;
+  renderFilters();
+  renderBoard();
+}
+
+// ─── BOARD ───────────────────────────────────────────────────────────────────
+
+function renderBoard() {
+  const filtered = activeFilter === 'all' ? ideas : ideas.filter(i => i.category === activeFilter);
+  const el = document.getElementById('board-cols');
+  el.innerHTML = STATUSES.map(s => {
+    const cols_ideas = filtered.filter(i => i.status === s);
+    return `
+      <div>
+        <div class="col-header">
+          <span class="col-label" style="color:${STATUS_COLORS[s]}">${STATUS_LABELS[s]}</span>
+          <span class="col-count">${cols_ideas.length}</span>
+        </div>
+        <div class="col-ideas" id="col-${s}">
+          ${cols_ideas.map(i => ideaCardHTML(i)).join('')}
+          ${cols_ideas.length === 0 ? `<div class="col-empty">No items</div>` : ''}
+        </div>
+        <button class="add-idea-btn" onclick="startAdd('${s}')">+ add idea</button>
+        <div id="add-form-${s}" style="display:none">
+          <div class="add-form">
+            <input id="af-title-${s}" type="text" placeholder="Title"/>
+            <textarea id="af-desc-${s}" placeholder="Short description"></textarea>
+            <div class="form-row">
+              <select id="af-cat-${s}">
+                <option value="">Category...</option>
+                ${[...new Set(ideas.map(i=>i.category))].map(c=>`<option value="${c}">${c}</option>`).join('')}
+                <option value="New">New Category</option>
+              </select>
+              <select id="af-pri-${s}">
+                <option value="high">⭐ High priority</option>
+                <option value="med" selected>Med priority</option>
+                <option value="low">Low priority</option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button class="btn-primary" onclick="submitAdd('${s}')">Add</button>
+              <button class="btn-cancel" onclick="cancelAdd('${s}')">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function ideaCardHTML(idea) {
+  const otherStatuses = STATUSES.filter(s => s !== idea.status);
+  const moveBtns = otherStatuses.map(s =>
+    `<button class="move-btn" onclick="event.stopPropagation();moveIdea(${idea.id},'${s}')">→ ${STATUS_LABELS[s]}</button>`
+  ).join('');
+  const priorityDot = idea.priority === 'high' ? '⭐ ' : '';
+  return `
+    <div class="idea-card ${idea.priority === 'high' ? 'priority-high' : ''}" style="--card-color:${STATUS_COLORS[idea.status]}" onclick="openModal(${idea.id})">
+      <div class="card-title">${priorityDot}${idea.title}</div>
+      <div class="card-desc">${idea.desc}</div>
+      <div class="card-tags">${idea.tags.map(t=>`<span class="tag ${TAG_CLASS[t]||'tag-build'}">${t}</span>`).join('')}</div>
+      <div class="card-actions">${moveBtns}</div>
+    </div>
+  `;
+}
+
+function moveIdea(id, status) {
+  ideas = ideas.map(i => i.id === id ? {...i, status} : i);
+  save(); renderBoard(); renderStats(); renderTimeline();
+}
+
+function startAdd(status) {
+  document.getElementById(`add-form-${status}`).style.display = 'block';
+}
+function cancelAdd(status) {
+  document.getElementById(`add-form-${status}`).style.display = 'none';
+}
+function submitAdd(status) {
+  const title = document.getElementById(`af-title-${status}`).value.trim();
+  if (!title) return;
+  const desc = document.getElementById(`af-desc-${status}`).value.trim();
+  const cat  = document.getElementById(`af-cat-${status}`).value || 'Misc';
+  const pri  = document.getElementById(`af-pri-${status}`).value;
+  const newId = Math.max(...ideas.map(i=>i.id)) + 1;
+  ideas.push({ id:newId, title, category:cat, desc, tags:[], priority:pri, status, notes:'', month:'', details:'' });
+  save(); renderAll();
+}
+
+// ─── MODAL ───────────────────────────────────────────────────────────────────
+
+function openModal(id) {
+  openIdeaId = id;
+  const idea = ideas.find(i => i.id === id);
+  const pb = idea.priority === 'high' ? `<span class="priority-badge p-high">⭐ High priority</span>`
+           : idea.priority === 'med'  ? `<span class="priority-badge p-med">Med priority</span>`
+                                      : `<span class="priority-badge p-low">Low</span>`;
+  document.getElementById('modal-body').innerHTML = `
+    <div class="modal-cat">${idea.category}</div>
+    <div class="modal-title">${idea.title}</div>
+    ${pb}
+    <div class="modal-desc">${idea.details || idea.desc}</div>
+    <div class="modal-section">Tags</div>
+    <div class="card-tags" style="margin-bottom:4px">${idea.tags.map(t=>`<span class="tag ${TAG_CLASS[t]||'tag-build'}">${t}</span>`).join('') || '<span style="font-size:12px;color:var(--muted)">No tags</span>'}</div>
+    <div class="modal-section">Status</div>
+    <select class="status-select" onchange="updateStatus(${id},this.value)">
+      ${STATUSES.map(s=>`<option value="${s}" ${idea.status===s?'selected':''}>${STATUS_LABELS[s]}</option>`).join('')}
+    </select>
+    <div class="modal-section">Notes</div>
+    <textarea class="notes-area" id="modal-notes" placeholder="Add notes, links, next steps...">${idea.notes}</textarea>
+    <button class="save-btn" onclick="saveNotes(${id})">Save notes</button>
+  `;
+  document.getElementById('modal-bg').classList.add('open');
+}
+
+function updateStatus(id, status) {
+  ideas = ideas.map(i => i.id === id ? {...i, status} : i);
+  save(); renderBoard(); renderStats(); renderTimeline();
+}
+
+function saveNotes(id) {
+  const notes = document.getElementById('modal-notes').value;
+  ideas = ideas.map(i => i.id === id ? {...i, notes} : i);
+  save();
+  const btn = document.querySelector('.save-btn');
+  btn.textContent = 'Saved ✓';
+  setTimeout(() => btn.textContent = 'Save notes', 1200);
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modal-bg')) closeModalDirect();
+}
+function closeModalDirect() {
+  document.getElementById('modal-bg').classList.remove('open');
+}
+
+// ─── TIMELINE ────────────────────────────────────────────────────────────────
+
+const MONTHS = ['May 2025','Jun 2025','Jul 2025','Aug 2025','Sep 2025','Oct 2025'];
+const CURRENT = 'May 2025';
+
+function renderTimeline() {
+  const el = document.getElementById('timeline-grid');
+  let html = `<div class="tl-month-col">`;
+  MONTHS.forEach(m => {
+    html += `<div class="tl-month ${m===CURRENT?'current':''}">${m === CURRENT ? '▶ '+m : m}</div>`;
+  });
+  html += `</div><div class="tl-items-col">`;
+  MONTHS.forEach(m => {
+    const mi = ideas.filter(i => i.month === m);
+    html += `<div class="tl-row">`;
+    mi.forEach(i => {
+      const c = TAG_COLOR[i.tags[0]] || '#8884a0';
+      html += `<span class="tl-chip" onclick="openModal(${i.id})"><span class="dot" style="background:${c}"></span>${i.title}</span>`;
+    });
+    if (mi.length === 0) html += `<span style="font-size:12px;color:var(--muted);padding-left:4px">Nothing scheduled</span>`;
+    html += `</div>`;
+  });
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+// ─── RESOURCES ───────────────────────────────────────────────────────────────
+
+const RESOURCES = [
+  { icon:'🤖', color:'rgba(124,106,245,0.15)', title:'Claude API', desc:'Build the SPARK AI Assistant, Resume Analyzer, Flashcard Generator, and more. Free tier available for student projects.', link:'https://console.anthropic.com', label:'Get API key →' },
+  { icon:'🛡️', color:'rgba(224,107,172,0.15)', title:'NVD CVE API', desc:'Free NIST feed powering the Threat Intel Dashboard. No auth required for read access.', link:'https://nvd.nist.gov/developers', label:'API docs →' },
+  { icon:'⚠️', color:'rgba(240,108,108,0.15)', title:'CISA KEV Feed', desc:'CISA\'s Known Exploited Vulnerabilities catalog — updated daily, machine-readable JSON.', link:'https://www.cisa.gov/known-exploited-vulnerabilities-catalog', label:'Download feed →' },
+  { icon:'📚', color:'rgba(62,207,142,0.15)', title:'Professor Messer (Security+)', desc:'Free CompTIA Security+ SY0-701 study materials. Ideal resource reference for Cybersecurity Jeopardy categories.', link:'https://www.professormesser.com', label:'Free materials →' },
+  { icon:'🐙', color:'rgba(56,201,201,0.15)', title:'GitHub Education', desc:'Free GitHub Team for student orgs — set up the SPARK AI Club org with private repos and CI/CD.', link:'https://education.github.com', label:'Apply →' },
+  { icon:'🎓', color:'rgba(245,166,35,0.15)', title:'CompTIA certifications', desc:'Official cert objectives for Security+, CySA+, and more — use for the Certification Roadmap Tool content.', link:'https://www.comptia.org/certifications', label:'Cert catalog →' },
+  { icon:'🔍', color:'rgba(168,156,247,0.15)', title:'Perplexity AI API', desc:'Web-grounded AI for the Threat Intel Dashboard\'s plain-language CVE summaries.', link:'https://www.perplexity.ai/api', label:'API access →' },
+  { icon:'📊', color:'rgba(62,207,142,0.15)', title:'Survey results (this doc)', desc:'10-member SPARK AI Club questionnaire results — use to prioritize features and justify decisions to leadership.', link:'#', label:'Already loaded ✓' }
+];
+
+function renderResources() {
+  document.getElementById('resources-grid').innerHTML = RESOURCES.map(r => `
+    <div class="resource-card">
+      <div class="rc-icon" style="background:${r.color}">${r.icon}</div>
+      <div class="rc-title">${r.title}</div>
+      <div class="rc-desc">${r.desc}</div>
+      <a class="rc-link" href="${r.link}" target="_blank">${r.label}</a>
+    </div>
+  `).join('');
+}
+
+// ─── TABS ─────────────────────────────────────────────────────────────────────
+
+function switchTab(id) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+
+function renderAll() {
+  renderStats();
+  renderFilters();
+  renderBoard();
+  renderTimeline();
+  renderResources();
+}
+
+load();
+renderAll();
+</script>
+</body>
+</html>
